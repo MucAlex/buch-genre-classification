@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+	<header>
+		<div class="container">
+		<h1>Klassifikation von Buchgenres</h1>
+		</div>
+	</header>
+	
+	<h2><b>Vorhergesagtes Genre für dieses Buch: {{prediction}}</b></h2>
+	<div class="results">
+	</div>
+
+</body>
+</html>
