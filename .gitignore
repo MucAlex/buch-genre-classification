@@ -1,0 +1,5 @@
+/data
+/genre_env
+.idea
+*.pkl
+src/__pycache__
