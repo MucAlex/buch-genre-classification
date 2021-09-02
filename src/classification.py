@@ -8,6 +8,10 @@ from sklearn.svm import LinearSVC
 from sklearn.model_selection import GridSearchCV
 from xgboost import XGBClassifier
 import joblib as job
+from sklearn.metrics import accuracy_score
+import warnings
+
+warnings.filterwarnings(action='ignore')
 
 
 class MlClassificationPipeline:
@@ -16,11 +20,23 @@ class MlClassificationPipeline:
         self.y_train = y_train
         self.x_train = x_train
 
+    def train_pipeline(self) -> Pipeline:
+        text_processor = ColumnTransformer(transformers=[
+            ('body_vect', TfidfVectorizer(min_df=2, max_df=0.6, analyzer='word', ngram_range=(1, 1)), 'clean_body'),
+            ('author_vect', CountVectorizer(analyzer='word'), 'authors')
+        ])
+        svm_pipe = Pipeline([('preprocessor', text_processor),
+                             ('cls', MultiOutputClassifier(LinearSVC()))])
+        svm_pipe.fit(self.x_train, self.y_train)
+        preds = svm_pipe.predict(self.x_train)
+        acc = accuracy_score(self.y_train, preds)
+        print(f"Training accuracy: {acc:.2%}")
+        return svm_pipe
+
     def perform_grid_search(self, num_cores: int = 4) -> list:
         text_processor = ColumnTransformer(transformers=[
             ('body_vect', TfidfVectorizer(), 'clean_body'),
-            # ('title_vect', CountVectorizer(), 'clean_title'),
-            ('author_vect', CountVectorizer(), 'authors')
+            ('author_vect', CountVectorizer(), 'clean_authors')
         ])
         svm_pipe = Pipeline([('preprocessor', text_processor),
                              ('cls', MultiOutputClassifier(LinearSVC()))])
@@ -36,11 +52,10 @@ class MlClassificationPipeline:
                       'XGBoost Classifier': xgb_pipe
                       }
         param_grid = {'preprocessor__body_vect__max_df': (0.6,),
-                      'preprocessor__body_vect__min_df': (5,),
-                      'preprocessor__body_vect__analyzer': ('char_wb',),
-                      # 'preprocessor__title_vect__analyzer': ('word',),
+                      'preprocessor__body_vect__min_df': (2,),
+                      'preprocessor__body_vect__analyzer': ('word',),
                       'preprocessor__author_vect__analyzer': ('word',),
-                      'preprocessor__body_vect__ngram_range': ((6, 8),)}
+                      'preprocessor__body_vect__ngram_range': ((1, 1),)}
         grid_search = []
         for model, pipe in model_dict.items():
             gs = GridSearchCV(estimator=pipe,
@@ -54,6 +69,6 @@ class MlClassificationPipeline:
         return grid_search
 
     @staticmethod
-    def save_pipe(pipeline):
+    def save_pipe(pipeline: Pipeline):
         job.dump(pipeline, r'..\model.pkl')
 
