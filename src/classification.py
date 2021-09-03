@@ -23,7 +23,7 @@ class MlClassificationPipeline:
     def train_pipeline(self) -> Pipeline:
         text_processor = ColumnTransformer(transformers=[
             ('body_vect', TfidfVectorizer(min_df=2, max_df=0.6, analyzer='word', ngram_range=(1, 1)), 'clean_body'),
-            ('author_vect', CountVectorizer(analyzer='word'), 'authors')
+            ('author_vect', CountVectorizer(analyzer='word'), 'clean_authors')
         ])
         svm_pipe = Pipeline([('preprocessor', text_processor),
                              ('cls', MultiOutputClassifier(LinearSVC()))])
@@ -38,6 +38,7 @@ class MlClassificationPipeline:
             ('body_vect', TfidfVectorizer(), 'clean_body'),
             ('author_vect', CountVectorizer(), 'clean_authors')
         ])
+
         svm_pipe = Pipeline([('preprocessor', text_processor),
                              ('cls', MultiOutputClassifier(LinearSVC()))])
         rf_pipe = Pipeline([('preprocessor', text_processor),

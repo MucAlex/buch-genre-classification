@@ -2,9 +2,9 @@ from typing import Union, Tuple, List
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import MultiLabelBinarizer
 import joblib as job
-from .data import DataPreparation
-from .cleaning import TextProcessor
-from .classification import MlClassificationPipeline
+from data import DataPreparation
+from cleaning import TextProcessor
+from classification import MlClassificationPipeline
 import numpy as np
 
 
@@ -23,7 +23,7 @@ def load_data() -> List[tuple]:
     return data
 
 
-def train_model(perform_grid_search: bool = False, save: bool = False) -> Union[
+def train_model(perform_grid_search: bool = False, save: bool = False, n_cores: int = 4) -> Union[
     Tuple[MlClassificationPipeline, MultiLabelBinarizer], None
 ]:
     # load data
@@ -44,16 +44,17 @@ def train_model(perform_grid_search: bool = False, save: bool = False) -> Union[
     y_test = mlb.transform(y_test.apply(lambda x: [tpc for tpc in x.dropna()], axis=1))
 
     # train classification pipeline
-    mcp = MlClassificationPipeline(x_train=x_train[['clean_body', 'clean_authors']], y_train=y_train)
+    mcp = MlClassificationPipeline(x_train=x_train[['clean_body', 'clean_title', 'clean_authors']], y_train=y_train)
     if perform_grid_search:
-        gs_list = mcp.perform_grid_search()
+        gs_list = mcp.perform_grid_search(num_cores=n_cores)
         scores = [gs.best_score_ for gs in gs_list]
         max_idx = np.argmax(scores)
         # Linear SVC performs best: @ index 0
         model = gs_list[max_idx].best_estimator_
     else:
         model = mcp.train_pipeline()
-    predictions = model.predict(x_test[['clean_body', 'clean_authors']])
+
+    predictions = model.predict(x_test[['clean_body', 'clean_title', 'clean_authors']])
     print(classification_report(y_test, predictions, digits=4))
     if save:
         mcp.save_pipe(pipeline=model)
@@ -63,7 +64,7 @@ def train_model(perform_grid_search: bool = False, save: bool = False) -> Union[
 
 
 if __name__ == '__main__':
-    train_model(perform_grid_search=False, save=True)
+    model, mlb = train_model(perform_grid_search=False, save=True)
 
 
 
